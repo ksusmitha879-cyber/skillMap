@@ -1,0 +1,570 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>SkillMap — Job Skill Gap Analyzer</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Space+Grotesk:wght@500;700&display=swap');
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:           #080C14;
+      --surface:      #0F1629;
+      --surface2:     #161E35;
+      --border:       #1E2D4A;
+      --indigo:       #6366F1;
+      --indigo-light: #818CF8;
+      --indigo-dim:   rgba(99,102,241,0.12);
+      --green:        #10B981;
+      --green-dim:    rgba(16,185,129,0.12);
+      --amber:        #F59E0B;
+      --red:          #EF4444;
+      --red-dim:      rgba(239,68,68,0.12);
+      --text:         #F1F5F9;
+      --text2:        #94A3B8;
+      --text3:        #4B5A72;
+    }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      padding: 32px 16px;
+    }
+
+    .app { max-width: 960px; margin: 0 auto; }
+
+    /* ── Header ── */
+    .header { text-align: center; margin-bottom: 36px; }
+    .logo { display: inline-flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+    .logo-icon {
+      width: 40px; height: 40px;
+      background: var(--indigo); border-radius: 10px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 20px;
+    }
+    .logo-text { font-family: 'Space Grotesk', sans-serif; font-size: 24px; font-weight: 700; }
+    .header-sub { font-size: 14px; color: var(--text2); max-width: 420px; margin: 0 auto; line-height: 1.7; }
+
+    /* ── API Status ── */
+    .api-status {
+      display: inline-flex; align-items: center; gap: 6px;
+      font-size: 12px; padding: 4px 12px;
+      border-radius: 20px; margin-top: 10px;
+      background: var(--surface); border: 1px solid var(--border);
+    }
+    .status-dot { width: 7px; height: 7px; border-radius: 50%; }
+    .dot-green  { background: var(--green); animation: pulse 2s infinite; }
+    .dot-red    { background: var(--red); }
+    .dot-amber  { background: var(--amber); }
+    @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
+
+    /* ── Section label ── */
+    .section-label {
+      font-size: 11px; font-weight: 600;
+      color: var(--text2); text-transform: uppercase;
+      letter-spacing: 0.07em; margin-bottom: 10px;
+    }
+
+    /* ── Job Grid ── */
+    .job-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+      gap: 8px; margin-bottom: 24px;
+    }
+    .job-btn {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 10px; padding: 12px 14px;
+      cursor: pointer; transition: all 0.2s; text-align: left;
+    }
+    .job-btn:hover  { border-color: var(--indigo); background: var(--indigo-dim); }
+    .job-btn.active { border-color: var(--indigo); background: var(--indigo-dim); }
+    .job-btn-title  { font-size: 13px; font-weight: 600; color: var(--text); margin-bottom: 2px; }
+    .job-btn-sub    { font-size: 11px; color: var(--text2); }
+
+    /* ── Cards ── */
+    .card {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 14px; padding: 20px;
+    }
+    .card-title {
+      font-size: 12px; font-weight: 600;
+      color: var(--text2); text-transform: uppercase;
+      letter-spacing: 0.06em; margin-bottom: 14px;
+    }
+
+    /* ── Main grid ── */
+    .main   { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+    .bottom { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 16px; }
+    @media (max-width: 640px) {
+      .main, .bottom { grid-template-columns: 1fr; }
+    }
+
+    /* ── Skill input ── */
+    .skill-input-row { display: flex; gap: 8px; margin-bottom: 12px; }
+    .skill-input {
+      flex: 1; background: var(--surface2);
+      border: 1px solid var(--border); border-radius: 8px;
+      padding: 9px 12px; font-size: 13px;
+      color: var(--text); font-family: 'Inter', sans-serif;
+      outline: none; transition: border-color 0.2s;
+    }
+    .skill-input:focus { border-color: var(--indigo); }
+    .skill-input::placeholder { color: var(--text3); }
+    .add-btn {
+      background: var(--indigo); border: none; border-radius: 8px;
+      padding: 9px 16px; color: white; font-size: 13px;
+      font-weight: 500; cursor: pointer;
+      font-family: 'Inter', sans-serif; transition: opacity 0.2s;
+    }
+    .add-btn:hover { opacity: 0.85; }
+
+    .skill-tags { display: flex; flex-wrap: wrap; gap: 6px; min-height: 36px; }
+    .skill-tag {
+      display: inline-flex; align-items: center; gap: 6px;
+      background: var(--indigo-dim);
+      border: 1px solid rgba(99,102,241,0.3);
+      border-radius: 20px; padding: 4px 10px;
+      font-size: 12px; font-weight: 500;
+      color: var(--indigo-light); cursor: pointer; transition: all 0.2s;
+    }
+    .skill-tag:hover { background: var(--red-dim); border-color: rgba(239,68,68,0.3); color: var(--red); }
+
+    .quick-add    { margin-top: 14px; }
+    .quick-label  { font-size: 11px; color: var(--text3); margin-bottom: 6px; }
+    .quick-tags   { display: flex; flex-wrap: wrap; gap: 4px; }
+    .quick-tag {
+      background: var(--surface2); border: 1px solid var(--border);
+      border-radius: 20px; padding: 3px 9px;
+      font-size: 11px; color: var(--text2);
+      cursor: pointer; transition: all 0.15s;
+    }
+    .quick-tag:hover { border-color: var(--indigo); color: var(--indigo-light); }
+
+    /* ── Match ring ── */
+    .match-ring-wrap { display: flex; flex-direction: column; align-items: center; margin-bottom: 18px; }
+    .ring-svg        { transform: rotate(-90deg); }
+    .ring-bg         { fill: none; stroke: var(--border); stroke-width: 8; }
+    .ring-fill       { fill: none; stroke-width: 8; stroke-linecap: round; transition: stroke-dashoffset 0.8s ease, stroke 0.4s; }
+    .ring-label      { text-anchor: middle; dominant-baseline: middle; font-family: 'Space Grotesk', sans-serif; }
+    .ring-num        { font-size: 22px; font-weight: 700; fill: var(--text); }
+    .ring-sub        { font-size: 9px; fill: var(--text2); }
+    .match-label     { font-size: 14px; font-weight: 600; margin-top: 6px; }
+
+    /* ── Skill rows ── */
+    .skill-list { display: flex; flex-direction: column; gap: 5px; max-height: 220px; overflow-y: auto; }
+    .skill-row  { display: flex; align-items: center; gap: 8px; padding: 7px 10px; border-radius: 8px; }
+    .skill-row.matched { background: var(--green-dim); }
+    .skill-row.missing { background: var(--red-dim); }
+    .skill-dot  { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }
+    .dot-g      { background: var(--green); }
+    .dot-r      { background: var(--red); }
+    .skill-row-name { font-size: 12px; font-weight: 500; flex: 1; }
+    .skill-row.matched .skill-row-name { color: var(--green); }
+    .skill-row.missing .skill-row-name { color: var(--red); }
+    .skill-badge  { font-size: 10px; padding: 2px 7px; border-radius: 10px; }
+    .badge-have   { background: rgba(16,185,129,0.2); color: var(--green); }
+    .badge-miss   { background: rgba(239,68,68,0.2);  color: var(--red); }
+
+    /* ── Recommendations ── */
+    .rec-item { display: flex; gap: 10px; padding: 10px; background: var(--surface2); border-radius: 8px; margin-bottom: 6px; }
+    .rec-num  {
+      width: 22px; height: 22px; background: var(--indigo-dim);
+      border-radius: 6px; display: flex; align-items: center;
+      justify-content: center; font-size: 11px; font-weight: 700;
+      color: var(--indigo-light); flex-shrink: 0;
+    }
+    .rec-text  { font-size: 12px; color: var(--text2); line-height: 1.6; }
+    .rec-skill { color: var(--text); font-weight: 500; }
+
+    /* ── History ── */
+    .history-item {
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 9px 12px; background: var(--surface2);
+      border-radius: 8px; margin-bottom: 6px;
+    }
+    .hist-role  { font-size: 12px; font-weight: 500; color: var(--text); }
+    .hist-date  { font-size: 10px; color: var(--text3); margin-top: 2px; }
+    .hist-score { font-size: 13px; font-weight: 700; }
+
+    /* ── Buttons ── */
+    .save-btn {
+      width: 100%; background: var(--indigo); border: none;
+      border-radius: 10px; padding: 12px; color: white;
+      font-size: 14px; font-weight: 600; cursor: pointer;
+      font-family: 'Inter', sans-serif; transition: opacity 0.2s; margin-top: 10px;
+    }
+    .save-btn:hover    { opacity: 0.85; }
+    .save-btn:disabled { opacity: 0.35; cursor: not-allowed; }
+
+    /* ── Empty / loading states ── */
+    .empty-state { font-size: 12px; color: var(--text3); text-align: center; padding: 20px 0; }
+    .loading     { font-size: 12px; color: var(--indigo-light); text-align: center; padding: 14px 0; }
+    .error-msg   { font-size: 12px; color: var(--red); text-align: center; padding: 14px 0; }
+
+    /* ── Toast ── */
+    .toast {
+      position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%);
+      background: var(--green); color: white;
+      padding: 10px 22px; border-radius: 8px;
+      font-size: 13px; font-weight: 500;
+      opacity: 0; transition: opacity 0.3s;
+      pointer-events: none; z-index: 999;
+    }
+    .toast.show { opacity: 1; }
+
+    /* ── Scrollbar ── */
+    ::-webkit-scrollbar       { width: 4px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+  </style>
+</head>
+<body>
+<div class="app">
+
+  <!-- Header -->
+  <div class="header">
+    <div class="logo">
+      <div class="logo-icon">🗺️</div>
+      <span class="logo-text">SkillMap</span>
+    </div>
+    <p class="header-sub">Analyze your skill gaps against real job roles and get personalized learning recommendations</p>
+    <div class="api-status">
+      <div class="status-dot dot-amber" id="statusDot"></div>
+      <span id="statusText">Connecting to API...</span>
+    </div>
+  </div>
+
+  <!-- Job Role Selector -->
+  <div class="section-label">Select a Job Role</div>
+  <div class="job-grid" id="jobGrid">
+    <div class="loading">Loading roles from API...</div>
+  </div>
+
+  <!-- Main: Input + Results -->
+  <div class="main">
+
+    <!-- Left: Skill Input -->
+    <div class="card">
+      <div class="card-title">Your Skills</div>
+      <div class="skill-input-row">
+        <input
+          class="skill-input" id="skillInput"
+          placeholder="e.g. Python, React, SQL..."
+          onkeydown="if(event.key==='Enter') addSkill()"
+        />
+        <button class="add-btn" onclick="addSkill()">Add</button>
+      </div>
+      <div class="skill-tags" id="skillTags">
+        <span style="font-size:12px;color:var(--text3)">Add your skills above ↑</span>
+      </div>
+      <div class="quick-add">
+        <div class="quick-label">Quick add:</div>
+        <div class="quick-tags" id="quickTags"></div>
+      </div>
+    </div>
+
+    <!-- Right: Match Ring + Breakdown -->
+    <div class="card">
+      <div class="card-title">Match Analysis</div>
+      <div class="match-ring-wrap">
+        <svg width="110" height="110" class="ring-svg">
+          <circle class="ring-bg" cx="55" cy="55" r="42"/>
+          <circle class="ring-fill" cx="55" cy="55" r="42"
+            id="ringFill" stroke-dasharray="264"
+            stroke-dashoffset="264" stroke="#6366F1"/>
+          <text class="ring-label" x="55" y="52" transform="rotate(90,55,55)">
+            <tspan class="ring-num" id="ringNum" x="55" dy="0">0%</tspan>
+            <tspan class="ring-sub" x="55" dy="16">MATCH</tspan>
+          </text>
+        </svg>
+        <div class="match-label" id="matchLabel" style="color:var(--text2)">Add skills to analyze</div>
+      </div>
+      <div class="skill-list" id="skillList">
+        <div class="empty-state">Select a role and add your skills</div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Bottom: Recommendations + History -->
+  <div class="bottom">
+
+    <div class="card">
+      <div class="card-title">Learning Recommendations</div>
+      <div id="recList"><div class="empty-state">Recommendations appear after analysis</div></div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Saved Analyses</div>
+      <div id="historyList"><div class="empty-state">No saved analyses yet</div></div>
+      <button class="save-btn" id="saveBtn" onclick="saveAnalysis()" disabled>
+        <i class="fa fa-save"></i> Save This Analysis
+      </button>
+    </div>
+
+  </div>
+</div>
+
+<div class="toast" id="toast">✓ Analysis saved successfully</div>
+
+<script>
+  // ── Change this to your Render URL after deployment ──────────────
+  const API = window.location.hostname === 'localhost' ||
+               window.location.hostname === '127.0.0.1'
+    ? 'http://127.0.0.1:10000'
+    : 'https://your-skillmap-app.onrender.com';
+  // ─────────────────────────────────────────────────────────────────
+
+  const QUICK = [
+    'Python','JavaScript','React','SQL','Git',
+    'HTML','CSS','Figma','Machine Learning',
+    'Docker','TypeScript','Pandas','Flask','Node.js'
+  ];
+
+  const RESOURCES = {
+    'Machine Learning'  : 'Coursera ML Specialization',
+    'Deep Learning'     : 'fast.ai — Practical Deep Learning',
+    'TensorFlow'        : 'tensorflow.org tutorials',
+    'PyTorch'           : 'pytorch.org official tutorials',
+    'React'             : 'react.dev official docs',
+    'Node.js'           : 'nodejs.org docs',
+    'TypeScript'        : 'typescriptlang.org handbook',
+    'Docker'            : 'Docker getting started guide',
+    'SQL'               : 'SQLZoo or Mode Analytics',
+    'Tableau'           : 'Tableau Public tutorials',
+    'Power BI'          : 'Microsoft Learn — Power BI',
+    'Figma'             : 'Figma YouTube channel',
+    'Design Thinking'   : 'IDEO Design Thinking course',
+    'PostgreSQL'        : 'postgresqltutorial.com',
+    'Statistics'        : 'StatQuest on YouTube',
+    'Scikit-learn'      : 'scikit-learn.org user guide',
+    'System Design'     : 'Designing Data-Intensive Apps',
+  };
+
+  let userSkills  = [];
+  let selectedJob = '';
+  let jobList     = [];
+
+  // ── Check API connection ─────────────────────────────────────────
+  async function checkAPI() {
+    try {
+      const res = await fetch(`${API}/`);
+      if (res.ok) {
+        document.getElementById('statusDot').className  = 'status-dot dot-green';
+        document.getElementById('statusText').textContent = 'API connected';
+      } else { throw new Error(); }
+    } catch {
+      document.getElementById('statusDot').className  = 'status-dot dot-red';
+      document.getElementById('statusText').textContent = 'API offline — start backend';
+    }
+  }
+
+  // ── Load job roles from API ──────────────────────────────────────
+  async function loadJobs() {
+    try {
+      const res  = await fetch(`${API}/api/jobs`);
+      const data = await res.json();
+      jobList     = data.jobs;
+      selectedJob = jobList[0];
+      renderJobGrid();
+    } catch {
+      document.getElementById('jobGrid').innerHTML =
+        '<div class="error-msg">Could not load jobs — is the backend running?</div>';
+    }
+  }
+
+  function renderJobGrid() {
+    const grid = document.getElementById('jobGrid');
+    grid.innerHTML = jobList.map(job => `
+      <div class="job-btn ${job === selectedJob ? 'active' : ''}"
+           onclick="selectJob('${job}')">
+        <div class="job-btn-title">${job}</div>
+        <div class="job-btn-sub">Click to analyze</div>
+      </div>
+    `).join('');
+  }
+
+  function selectJob(job) {
+    selectedJob = job;
+    renderJobGrid();
+    if (userSkills.length > 0) analyze();
+  }
+
+  // ── Quick add tags ───────────────────────────────────────────────
+  function renderQuickTags() {
+    document.getElementById('quickTags').innerHTML = QUICK.map(s => `
+      <span class="quick-tag" onclick="quickAdd('${s}')">${s}</span>
+    `).join('');
+  }
+
+  function quickAdd(skill) {
+    if (!userSkills.includes(skill)) {
+      userSkills.push(skill);
+      renderSkillTags();
+      analyze();
+    }
+  }
+
+  // ── Skill input ──────────────────────────────────────────────────
+  function addSkill() {
+    const input = document.getElementById('skillInput');
+    const val   = input.value.trim();
+    if (val && !userSkills.includes(val)) {
+      userSkills.push(val);
+      renderSkillTags();
+      analyze();
+    }
+    input.value = '';
+    input.focus();
+  }
+
+  function removeSkill(skill) {
+    userSkills = userSkills.filter(s => s !== skill);
+    renderSkillTags();
+    analyze();
+  }
+
+  function renderSkillTags() {
+    const container = document.getElementById('skillTags');
+    if (userSkills.length === 0) {
+      container.innerHTML = '<span style="font-size:12px;color:var(--text3)">Add your skills above ↑</span>';
+      return;
+    }
+    container.innerHTML = userSkills.map(s => `
+      <span class="skill-tag" onclick="removeSkill('${s}')">
+        ${s} <span style="font-size:10px">✕</span>
+      </span>
+    `).join('');
+  }
+
+  // ── Analyze — calls FastAPI backend ─────────────────────────────
+  async function analyze() {
+    if (!selectedJob || userSkills.length === 0) return;
+
+    document.getElementById('skillList').innerHTML = '<div class="loading">Analyzing...</div>';
+    document.getElementById('saveBtn').disabled = true;
+
+    try {
+      const res  = await fetch(`${API}/api/analyze`, {
+        method  : 'POST',
+        headers : { 'Content-Type': 'application/json' },
+        body    : JSON.stringify({ user_skills: userSkills, job_role: selectedJob })
+      });
+      const data = await res.json();
+      renderResults(data);
+      document.getElementById('saveBtn').disabled = false;
+
+    } catch {
+      document.getElementById('skillList').innerHTML =
+        '<div class="error-msg">Analysis failed — check backend connection</div>';
+    }
+  }
+
+  function renderResults(data) {
+    const { match_score, matched_skills, missing_skills } = data;
+
+    // Ring
+    const offset = 264 - (match_score / 100) * 264;
+    const ring   = document.getElementById('ringFill');
+    ring.style.strokeDashoffset = offset;
+    ring.style.stroke = match_score >= 70 ? '#10B981' : match_score >= 40 ? '#F59E0B' : '#6366F1';
+    document.getElementById('ringNum').textContent = match_score + '%';
+
+    // Label
+    const label = document.getElementById('matchLabel');
+    if      (match_score >= 70) { label.textContent = 'Strong match! 🎉';       label.style.color = 'var(--green)'; }
+    else if (match_score >= 40) { label.textContent = 'Getting there 💪';        label.style.color = 'var(--amber)'; }
+    else                        { label.textContent = 'Keep building skills 📚'; label.style.color = 'var(--indigo-light)'; }
+
+    // Skill rows
+    document.getElementById('skillList').innerHTML = [
+      ...matched_skills.map(s => `
+        <div class="skill-row matched">
+          <div class="skill-dot dot-g"></div>
+          <span class="skill-row-name">${s}</span>
+          <span class="skill-badge badge-have">✓ Have</span>
+        </div>`),
+      ...missing_skills.map(s => `
+        <div class="skill-row missing">
+          <div class="skill-dot dot-r"></div>
+          <span class="skill-row-name">${s}</span>
+          <span class="skill-badge badge-miss">Missing</span>
+        </div>`)
+    ].join('') || '<div class="empty-state">No results</div>';
+
+    // Recommendations
+    const recList = document.getElementById('recList');
+    if (missing_skills.length === 0) {
+      recList.innerHTML = '<div class="empty-state" style="color:var(--green)">🎉 You have all required skills!</div>';
+    } else {
+      recList.innerHTML = missing_skills.slice(0, 4).map((s, i) => `
+        <div class="rec-item">
+          <div class="rec-num">${i + 1}</div>
+          <div class="rec-text">
+            Learn <span class="rec-skill">${s}</span>
+            ${RESOURCES[s] ? ' → ' + RESOURCES[s] : ' → Search on Coursera or YouTube'}
+          </div>
+        </div>`).join('');
+    }
+  }
+
+  // ── Save to DB via API ───────────────────────────────────────────
+  async function saveAnalysis() {
+    try {
+      await fetch(`${API}/api/save`, {
+        method  : 'POST',
+        headers : { 'Content-Type': 'application/json' },
+        body    : JSON.stringify({ user_skills: userSkills, job_role: selectedJob })
+      });
+      loadHistory();
+      const toast = document.getElementById('toast');
+      toast.classList.add('show');
+      setTimeout(() => toast.classList.remove('show'), 2500);
+    } catch {
+      alert('Could not save — check backend connection');
+    }
+  }
+
+  // ── Load history from DB ─────────────────────────────────────────
+  async function loadHistory() {
+    try {
+      const res  = await fetch(`${API}/api/history`);
+      const data = await res.json();
+      const container = document.getElementById('historyList');
+      if (!data.history.length) {
+        container.innerHTML = '<div class="empty-state">No saved analyses yet</div>';
+        return;
+      }
+      container.innerHTML = data.history.slice(0, 5).map(h => `
+        <div class="history-item">
+          <div>
+            <div class="hist-role">${h.role}</div>
+            <div class="hist-date">${h.skills.length} skills · ${new Date(h.date).toLocaleDateString('en-IN',{day:'numeric',month:'short'})}</div>
+          </div>
+          <div class="hist-score" style="color:${h.score>=70?'var(--green)':h.score>=40?'var(--amber)':'var(--indigo-light)'}">
+            ${h.score}%
+          </div>
+        </div>`).join('');
+    } catch {
+      document.getElementById('historyList').innerHTML =
+        '<div class="error-msg">Could not load history</div>';
+    }
+  }
+
+  // ── Init ─────────────────────────────────────────────────────────
+  async function init() {
+    renderQuickTags();
+    await checkAPI();
+    await loadJobs();
+    await loadHistory();
+  }
+
+  init();
+</script>
+</body>
+</html>

@@ -7,8 +7,8 @@
 ![SkillMap Demo](screenshots/screenshot1.png)
 
 ## 🔗 Live Demo
-- **Frontend:** [SkillMap App](https://ksusmitha879-cyber.github.io/skillmap)
-- **Backend API:** [API Docs](https://your-skillmap.onrender.com/docs)
+- **Frontend:** [SkillMap App](https://ksusmitha879-cyber.github.io/skillMap/)
+- **Backend API:** [API Docs](https://skillmap-y1bu.onrender.com/docs)
 
 ---
 
@@ -46,11 +46,11 @@ precisely what to learn next.
 ### Skill Analysis — Match Score
 ### Skill Breakdown — Matched vs Missing
 
-![Home Page, skill Analysis, skillBreakdown ](Screenshots\Screenshot (210).png)
+![Home Page, skill Analysis, skillBreakdown ](Screenshots/Screenshot1.png)
 
 ### Saved History
 
-![Saved History](Screenshots\Screenshot (211).png)
+![Saved History](Screenshots/Screenshot2.png)
 
 ---
 
